@@ -1,386 +1,385 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snack Game</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .game-container {
-            position: relative;
-            width: 400px;
-            height: 600px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            border: 3px solid #ff6b6b;
-        }
-        
-        .game-header {
-            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .score-lives {
-            display: flex;
-            gap: 15px;
-            font-size: 1.1rem;
-        }
-        
-        .game-canvas {
-            position: relative;
-            flex-grow: 1;
-            background: #87CEEB;
-            overflow: hidden;
-        }
-        
-        .player {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 60px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#4ecdc4"/><path d="M20 20 L12 28 L20 36 Z" fill="#ff6b6b"/></svg>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        }
-        
-        .snack, .obstacle {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            animation: fall linear infinite;
-        }
-        
-        .snack {
-            background: linear-gradient(to bottom, #FFD700, #FFA500);
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
-        }
-        
-        .obstacle {
-            background: linear-gradient(to bottom, #8B0000, #FF0000);
-            box-shadow: 0 0 10px rgba(139, 0, 0, 0.7);
-        }
-        
-        @keyframes fall {
-            to {
-                transform: translateY(600px);
-            }
-        }
-        
-        .game-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            font-size: 1.8rem;
-            text-align: center;
-            padding: 20px;
-            display: none;
-            z-index: 10;
-        }
-        
-        .game-overlay.show {
-            display: flex;
-        }
-        
-        .btn {
-            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1.2rem;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .instructions {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            z-index: 5;
-        }
-        
-        @media (max-width: 480px) {
-            .game-container {
-                width: 90%;
-                height: 80vh;
-            }
-            
-            .player {
-                width: 50px;
-                height: 50px;
-            }
-            
-            .snack, .obstacle {
-                width: 35px;
-                height: 35px;
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🍕 Snack Attack — Catch the Snacks</title>
+<style>
+  :root{ --gold:#ffd166; --bad:#ef476f; --ink:#12102a; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+    background:radial-gradient(circle at 20% 15%, #3a1c71, #150c30 65%);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden; color:#fff;
+    -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+  }
+
+  /* FIX: flex column so .stage actually gets height (was 0px before) */
+  .game{
+    position:relative;
+    width:min(440px,96vw); height:min(780px,96vh);
+    display:flex; flex-direction:column;
+    background:var(--ink); border-radius:24px; overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.65), 0 0 0 3px rgba(255,209,102,.45);
+  }
+
+  .hud{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:12px 16px; font-weight:800; color:var(--ink);
+    background:linear-gradient(90deg,#ff6b6b,var(--gold) 55%,#4ecdc4);
+  }
+  .hud .title{ font-size:1rem; letter-spacing:.4px; white-space:nowrap; }
+  .hud .stats{ display:flex; gap:12px; font-size:.95rem; white-space:nowrap; }
+
+  .stage{
+    position:relative; flex:1 1 auto; min-height:0; overflow:hidden;
+    touch-action:none;
+    background:
+      radial-gradient(circle at 50% 0%, #1b4b6b 0%, #16213e 55%, #14281f 100%);
+  }
+  .stage::after{ /* faint tile pattern */
+    content:''; position:absolute; inset:0; pointer-events:none; opacity:.10;
+    background-image:
+      linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px);
+    background-size:44px 44px;
+  }
+
+  .player{
+    position:absolute; left:0; bottom:10px; width:72px; height:72px;
+    z-index:2; will-change:transform;
+    filter:drop-shadow(0 8px 12px rgba(0,0,0,.55));
+  }
+  .player svg{ display:block; width:100%; height:100%; }
+  .player.hit{ animation:shake .38s ease-in-out; }
+  @keyframes shake{
+    0%,100%{ transform:translateX(var(--px,0)) }
+    25%{ filter:drop-shadow(0 0 14px var(--bad)) brightness(1.6) }
+    50%{ filter:drop-shadow(0 0 18px var(--bad)) brightness(1.9) }
+  }
+
+  .item{
+    position:absolute; left:0; top:0; width:44px; height:44px; z-index:1;
+    display:flex; align-items:center; justify-content:center;
+    font-size:33px; line-height:1; pointer-events:none;
+    will-change:transform;
+  }
+  .item.snack{ filter:drop-shadow(0 0 9px rgba(255,209,102,.85)); }
+  .item.bomb{ filter:drop-shadow(0 0 9px rgba(239,71,111,.95)); }
+
+  .pop{
+    position:absolute; left:0; top:0; z-index:3; font-weight:900;
+    font-size:1.05rem; pointer-events:none; text-shadow:0 2px 6px rgba(0,0,0,.8);
+    animation:rise .75s ease-out forwards;
+  }
+  @keyframes rise{ to{ margin-top:-40px; opacity:0; } }
+
+  .hint{
+    position:absolute; left:50%; bottom:16px; z-index:3;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,.62); color:#fff; padding:9px 18px;
+    border-radius:999px; font-size:.85rem; white-space:nowrap;
+    transition:opacity .7s ease; pointer-events:none;
+  }
+  .hint.fade{ opacity:0; }
+
+  .overlay{
+    position:absolute; inset:0; z-index:5; padding:26px 22px;
+    background:rgba(8,6,20,.84); backdrop-filter:blur(3px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; text-align:center;
+  }
+  .overlay.hidden{ display:none; }
+  .overlay h1{ font-size:1.9rem; line-height:1.15; }
+  .overlay h2{ font-size:1.7rem; }
+  .overlay p{ font-size:1rem; }
+  .overlay .sub{ color:#b9bdd8; font-size:.9rem; }
+  .legend{ display:flex; flex-direction:column; gap:8px; margin:4px 0 6px; }
+  .legend span{
+    background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.14);
+    border-radius:999px; padding:7px 16px; font-size:.95rem;
+  }
+  .keys{ color:#8e93b5; font-size:.78rem; }
+
+  .btn{
+    border:none; cursor:pointer; color:var(--ink); font-weight:900;
+    font-size:1.15rem; padding:14px 38px; border-radius:999px;
+    background:linear-gradient(180deg,var(--gold),#ffa100);
+    box-shadow:0 4px 0 #b57400; transition:transform .12s, box-shadow .12s;
+  }
+  .btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #b57400; }
+
+  .controls{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:10px 16px 12px; background:#0d0b20;
+  }
+  .pad{
+    width:82px; height:56px; border:none; border-radius:18px; cursor:pointer;
+    font-size:1.4rem; font-weight:900; color:var(--ink); touch-action:none;
+    background:linear-gradient(180deg,#4ecdc4,#25a49b);
+    box-shadow:0 4px 0 #14655f;
+  }
+  .pad:active{ transform:translateY(3px); box-shadow:0 1px 0 #14655f; }
+  .tip{ font-size:.72rem; color:#8e93b5; text-align:center; line-height:1.5; }
+</style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="game-header">
-            <div>Snack Game</div>
-            <div class="score-lives">
-                <div>Score: <span id="score">0</span></div>
-                <div>Lives: <span id="lives">3</span></div>
-            </div>
-        </div>
-        
-        <div class="game-canvas" id="gameCanvas">
-            <div class="player" id="player"></div>
-        </div>
-        
-        <div class="instructions">
-            Use Arrow Keys ← → to move<br>Collect snacks (yellow) • Avoid bombs (red)
-        </div>
-        
-        <div class="game-overlay" id="gameOverlay">
-            <div>Game Over!</div>
-            <div>Final Score: <span id="finalScore">0</span></div>
-            <button class="btn" id="restartBtn">Play Again</button>
-        </div>
+  <div class="game">
+    <div class="hud">
+      <div class="title">🍕 Snack Attack</div>
+      <div class="stats">
+        <span>🏆 <b id="score">0</b></span>
+        <span>Lv <b id="level">1</b></span>
+        <span id="lives">❤️❤️❤️</span>
+      </div>
     </div>
 
-    <script>
-        class SnackGame {
-            constructor() {
-                this.canvas = document.getElementById('gameCanvas');
-                this.player = document.getElementById('player');
-                this.scoreElement = document.getElementById('score');
-                this.livesElement = document.getElementById('lives');
-                this.gameOverlay = document.getElementById('gameOverlay');
-                this.finalScoreElement = document.getElementById('finalScore');
-                this.restartBtn = document.getElementById('restartBtn');
-                
-                this.canvasWidth = this.canvas.offsetWidth;
-                this.canvasHeight = this.canvas.offsetHeight;
-                
-                this.playerSize = 60;
-                this.playerX = this.canvasWidth / 2 - this.playerSize / 2;
-                this.playerSpeed = 8;
-                
-                this.snacks = [];
-                this.obstacles = [];
-                
-                this.score = 0;
-                this.lives = 3;
-                this.gameOver = false;
-                this.spawnRate = 1500; // ms
-                this.lastSpawn = 0;
-                
-                this.init();
-            }
-            
-            init() {
-                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-                this.restartBtn.addEventListener('click', () => this.restartGame());
-                this.resetGame();
-                this.gameLoop();
-            }
-            
-            handleKeyDown(e) {
-                if (this.gameOver) return;
-                
-                switch(e.key) {
-                    case 'ArrowLeft':
-                        this.movePlayer(-1);
-                        break;
-                    case 'ArrowRight':
-                        this.movePlayer(1);
-                        break;
-                }
-            }
-            
-            movePlayer(direction) {
-                const newX = this.playerX + (this.playerSpeed * direction);
-                const maxX = this.canvasWidth - this.playerSize;
-                this.playerX = Math.max(0, Math.min(newX, maxX));
-                this.player.style.left = `${this.playerX}px`;
-            }
-            
-            spawnObject() {
-                const now = Date.now();
-                if (now - this.lastSpawn < this.spawnRate) return;
-                
-                this.lastSpawn = now;
-                
-                // Decide if it's a snack or obstacle (70% snack, 30% obstacle)
-                const isSnack = Math.random() < 0.7;
-                const size = 40;
-                const x = Math.random() * (this.canvasWidth - size);
-                
-                const object = document.createElement('div');
-                object.className = isSnack ? 'snack' : 'obstacle';
-                object.style.left = `${x}px`;
-                object.style.top = `-${size}px`;
-                object.dataset.type = isSnack ? 'snack' : 'obstacle';
-                
-                // Random fall speed between 2-5 px/frame
-                object.speed = 2 + Math.random() * 3;
-                
-                this.canvas.appendChild(object);
-                
-                if (isSnack) {
-                    this.snacks.push(object);
-                } else {
-                    this.obstacles.push(object);
-                }
-            }
-            
-            update() {
-                if (this.gameOver) return;
-                
-                this.spawnObject();
-                
-                // Update snacks
-                this.snacks.forEach((snack, index) => {
-                    snack.style.top = `${parseFloat(snack.style.top) + snack.speed}px`;
-                    
-                    // Remove if off screen
-                    if (parseFloat(snack.style.top) > this.canvasHeight) {
-                        snack.remove();
-                        this.snacks.splice(index, 1);
-                        return;
-                    }
-                    
-                    // Check collision with player
-                    if (this.checkCollision(snack)) {
-                        snack.remove();
-                        this.snacks.splice(index, 1);
-                        this.score += 10;
-                        this.scoreElement.textContent = this.score;
-                        
-                        // Increase difficulty slightly
-                        if (this.score % 50 === 0) {
-                            this.spawnRate = Math.max(500, this.spawnRate - 50);
-                        }
-                    }
-                });
-                
-                // Update obstacles
-                this.obstacles.forEach((obstacle, index) => {
-                    obstacle.style.top = `${parseFloat(obstacle.style.top) + obstacle.speed}px`;
-                    
-                    // Remove if off screen
-                    if (parseFloat(obstacle.style.top) > this.canvasHeight) {
-                        obstacle.remove();
-                        this.obstacles.splice(index, 1);
-                        return;
-                    }
-                    
-                    // Check collision with player
-                    if (this.checkCollision(obstacle)) {
-                        obstacle.remove();
-                        this.obstacles.splice(index, 1);
-                        this.lives -= 1;
-                        this.livesElement.textContent = this.lives;
-                        
-                        if (this.lives <= 0) {
-                            this.endGame();
-                        }
-                    }
-                });
-            }
-            
-            checkCollision(obj1) {
-                const playerRect = this.player.getBoundingClientRect();
-                const objRect = obj1.getBoundingClientRect();
-                
-                return !(playerRect.right < objRect.left || 
-                        playerRect.left > objRect.right || 
-                        playerRect.bottom < objRect.top || 
-                        playerRect.top > objRect.bottom);
-            }
-            
-            endGame() {
-                this.gameOver = true;
-                this.gameOverlay.style.display = 'flex';
-                this.finalScoreElement.textContent = this.score;
-            }
-            
-            restartGame() {
-                this.gameOver = false;
-                this.gameOverlay.style.display = 'none';
-                this.resetGame();
-            }
-            
-            resetGame() {
-                // Clear all objects
-                this.snacks.forEach(snack => snack.remove());
-                this.obstacles.forEach(obstacle => obstacle.remove());
-                this.snacks = [];
-                this.obstacles = [];
-                
-                // Reset game state
-                this.score = 0;
-                this.lives = 3;
-                this.scoreElement.textContent = this.score;
-                this.livesElement.textContent = this.lives;
-                this.spawnRate = 1500;
-                
-                // Reset player position
-                this.playerX = this.canvasWidth / 2 - this.playerSize / 2;
-                this.player.style.left = `${this.playerX}px`;
-            }
-            
-            gameLoop() {
-                this.update();
-                requestAnimationFrame(() => this.gameLoop());
-            }
-        }
-        
-        // Start the game when page loads
-        window.addEventListener('load', () => {
-            new SnackGame();
-        });
-    </script>
+    <div class="stage" id="stage">
+      <div class="player" id="player">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="32" cy="34" rx="27" ry="25" fill="#4ecdc4"/>
+          <ellipse cx="32" cy="34" rx="27" ry="25" fill="none" stroke="#2b9c94" stroke-width="3"/>
+          <circle cx="22" cy="24" r="8" fill="#fff"/>
+          <circle cx="23.5" cy="25.5" r="4" fill="#12102a"/>
+          <circle cx="42" cy="24" r="8" fill="#fff"/>
+          <circle cx="43.5" cy="25.5" r="4" fill="#12102a"/>
+          <path d="M14 41 Q32 60 50 41 Q32 50 14 41 Z" fill="#e63946"/>
+          <path d="M26 49 Q32 55 38 49 Q32 52 26 49 Z" fill="#ff8fa3"/>
+        </svg>
+      </div>
+
+      <div class="hint" id="hint">Catch the falling snacks — dodge the bombs!</div>
+
+      <div class="overlay" id="startOverlay">
+        <h1>🍕 Snack Attack</h1>
+        <p class="sub">Your hungry monster is at the bottom of the plate.<br>Move it under the falling food.</p>
+        <div class="legend">
+          <span>🍕 🍔 🍩 🍟 🍎 🍦 🍪 → <b>+10 points</b></span>
+          <span>💣 → <b>−1 life</b></span>
+        </div>
+        <button class="btn" id="startBtn">▶ Play</button>
+        <p class="keys">Move: ← → keys · A / D · or drag anywhere on the screen</p>
+      </div>
+
+      <div class="overlay hidden" id="overOverlay">
+        <h2>💥 Game Over</h2>
+        <p>Score <b id="finalScore">0</b></p>
+        <p class="sub">Best <b id="bestScore">0</b></p>
+        <button class="btn" id="againBtn">↻ Play Again</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="pad" id="padLeft" aria-label="Move left">◀</button>
+      <div class="tip">Catch snacks · dodge bombs<br>(space = start / restart)</div>
+      <button class="pad" id="padRight" aria-label="Move right">▶</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var stage  = document.getElementById('stage');
+  var player = document.getElementById('player');
+  var scoreEl = document.getElementById('score');
+  var levelEl = document.getElementById('level');
+  var livesEl = document.getElementById('lives');
+  var hint    = document.getElementById('hint');
+  var startOv = document.getElementById('startOverlay');
+  var overOv  = document.getElementById('overOverlay');
+  var finalEl = document.getElementById('finalScore');
+  var bestEl  = document.getElementById('bestScore');
+
+  var SNACKS = ['🍕','🍔','🍩','🍟','🍎','🍦','🍪','🍉','🌮','🧁','🍫','🥨','🍌'];
+  var ITEM = 44, PW = 72, PH = 72, PSPEED = 430;
+
+  var W = 0, H = 0;
+  var px = 0, dir = 0, dragX = null, dragging = false;
+  var items = [], score = 0, lives = 3, level = 1;
+  var spawnTimer = 0, spawnEvery = 0.95, lastT = 0, running = false, hintTimer = 0;
+  var best = 0;
+  try { best = Number(localStorage.getItem('snackAttackBest') || 0) || 0; } catch (e) { best = 0; }
+
+  function measure(){
+    var r = stage.getBoundingClientRect();
+    W = r.width; H = r.height;
+    clampPlayer();
+    if ((W < 10 || H < 10) && running) setTimeout(measure, 60);
+  }
+
+  function clampPlayer(){
+    var max = Math.max(0, W - PW);
+    if (px < 0) px = 0;
+    if (px > max) px = max;
+    player.style.transform = 'translateX(' + px + 'px)';
+    player.style.setProperty('--px', px + 'px');
+  }
+
+  function renderLives(){
+    var s = '';
+    for (var i = 0; i < 3; i++) s += (i < lives ? '❤️' : '🖤');
+    livesEl.textContent = s;
+  }
+
+  function spawn(){
+    var bomb = Math.random() < Math.min(0.32, 0.13 + level * 0.03);
+    var el = document.createElement('div');
+    el.className = 'item ' + (bomb ? 'bomb' : 'snack');
+    el.textContent = bomb ? '💣' : SNACKS[(Math.random() * SNACKS.length) | 0];
+    el.style.transform = 'translate(' + (-90) + 'px,' + (-90) + 'px)';
+    stage.appendChild(el);
+    items.push({
+      el: el,
+      x: Math.random() * Math.max(1, W - ITEM),
+      y: -ITEM,
+      vy: (bomb ? 165 : 190) + Math.random() * 80 + level * 22,
+      bomb: bomb
+    });
+  }
+
+  function popup(text, color, x, y){
+    var p = document.createElement('div');
+    p.className = 'pop';
+    p.textContent = text;
+    p.style.color = color;
+    p.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+    stage.appendChild(p);
+    setTimeout(function(){ p.remove(); }, 760);
+  }
+
+  function hit(it){
+    if (it.bomb){
+      lives--; renderLives();
+      popup('💥 −1', '#ef476f', it.x, it.y);
+      player.classList.remove('hit');
+      void player.offsetWidth;
+      player.classList.add('hit');
+      if (lives <= 0) gameOver();
+    } else {
+      score += 10;
+      scoreEl.textContent = score;
+      popup('+10', '#ffd166', it.x, it.y);
+      var nl = 1 + Math.floor(score / 100);
+      if (nl !== level){
+        level = nl; levelEl.textContent = level;
+        spawnEvery = Math.max(0.38, 0.95 - (level - 1) * 0.07);
+      }
+    }
+  }
+
+  function update(dt){
+    if (dragX !== null){
+      var centre = px + PW / 2, diff = dragX - centre, step = PSPEED * dt;
+      px += Math.abs(diff) <= step ? diff : (diff > 0 ? step : -step);
+    } else if (dir !== 0){
+      px += dir * PSPEED * dt;
+    }
+    clampPlayer();
+
+    spawnTimer += dt;
+    if (spawnTimer >= spawnEvery){ spawnTimer = 0; spawn(); }
+
+    var pt = H - 10 - PH, pb = H - 10;
+    for (var i = items.length - 1; i >= 0; i--){
+      var it = items[i];
+      it.y += it.vy * dt;
+      it.el.style.transform = 'translate(' + it.x + 'px,' + it.y + 'px)';
+
+      var ol = it.x + 8, or_ = it.x + ITEM - 8, ot = it.y + 8, ob = it.y + ITEM - 8;
+      if (or_ > px && ol < px + PW && ob > pt && ot < pb){
+        hit(it); it.el.remove(); items.splice(i, 1); continue;
+      }
+      if (it.y > H){ it.el.remove(); items.splice(i, 1); }
+    }
+  }
+
+  function loop(now){
+    if (!lastT) lastT = now;
+    var dt = (now - lastT) / 1000; lastT = now;
+    if (dt > 0.05) dt = 0.05;
+    if (running) update(dt);
+    requestAnimationFrame(loop);
+  }
+
+  function start(){
+    items.forEach(function(i){ i.el.remove(); });
+    items = [];
+    score = 0; lives = 3; level = 1; spawnTimer = 0; spawnEvery = 0.95;
+    scoreEl.textContent = '0'; levelEl.textContent = '1';
+    renderLives();
+    measure();
+    px = Math.max(0, W / 2 - PW / 2); clampPlayer();
+    startOv.classList.add('hidden');
+    overOv.classList.add('hidden');
+    hint.classList.remove('fade');
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(function(){ hint.classList.add('fade'); }, 3200);
+    running = true; lastT = 0; dir = 0; dragX = null;
+  }
+
+  function gameOver(){
+    running = false; dir = 0; dragX = null;
+    if (score > best){
+      best = score;
+      try { localStorage.setItem('snackAttackBest', String(best)); } catch (e) {}
+    }
+    finalEl.textContent = score;
+    bestEl.textContent = best;
+    hint.classList.add('fade');
+    overOv.classList.remove('hidden');
+  }
+
+  /* ---- input ---- */
+  window.addEventListener('keydown', function(e){
+    var k = e.key;
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A'){ dir = -1; dragX = null; e.preventDefault(); }
+    else if (k === 'ArrowRight' || k === 'd' || k === 'D'){ dir = 1; dragX = null; e.preventDefault(); }
+    else if (k === ' ' || k === 'Enter'){ if (!running) start(); e.preventDefault(); }
+  });
+  window.addEventListener('keyup', function(e){
+    var k = e.key;
+    if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'a' || k === 'A' || k === 'd' || k === 'D') dir = 0;
+  });
+
+  function bindPad(id, d){
+    var b = document.getElementById(id);
+    function on(e){ e.preventDefault(); dir = d; dragX = null; }
+    function off(){ if (dir === d) dir = 0; }
+    b.addEventListener('pointerdown', on);
+    b.addEventListener('pointerup', off);
+    b.addEventListener('pointerleave', off);
+    b.addEventListener('pointercancel', off);
+  }
+  bindPad('padLeft', -1);
+  bindPad('padRight', 1);
+
+  stage.addEventListener('pointerdown', function(e){
+    if (!running) return;
+    dragging = true;
+    dragX = e.clientX - stage.getBoundingClientRect().left;
+    if (stage.setPointerCapture) { try { stage.setPointerCapture(e.pointerId); } catch (err) {} }
+  });
+  stage.addEventListener('pointermove', function(e){
+    if (dragging) dragX = e.clientX - stage.getBoundingClientRect().left;
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(t){
+    stage.addEventListener(t, function(){ dragging = false; dragX = null; });
+  });
+
+  document.getElementById('startBtn').addEventListener('click', start);
+  document.getElementById('againBtn').addEventListener('click', start);
+
+  window.addEventListener('resize', measure);
+  window.addEventListener('orientationchange', function(){ setTimeout(measure, 150); });
+
+  /* ---- boot ---- */
+  renderLives();
+  bestEl.textContent = best;
+  measure();
+  requestAnimationFrame(loop);
+  setTimeout(measure, 100);
+})();
+</script>
 </body>
 </html>
