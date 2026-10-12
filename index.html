@@ -1,0 +1,388 @@
+# snackgame.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snack Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            border: 3px solid #ff6b6b;
+        }
+        
+        .game-header {
+            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .score-lives {
+            display: flex;
+            gap: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .game-canvas {
+            position: relative;
+            flex-grow: 1;
+            background: #87CEEB;
+            overflow: hidden;
+        }
+        
+        .player {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#4ecdc4"/><path d="M20 20 L12 28 L20 36 Z" fill="#ff6b6b"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .snack, .obstacle {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            animation: fall linear infinite;
+        }
+        
+        .snack {
+            background: linear-gradient(to bottom, #FFD700, #FFA500);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+        }
+        
+        .obstacle {
+            background: linear-gradient(to bottom, #8B0000, #FF0000);
+            box-shadow: 0 0 10px rgba(139, 0, 0, 0.7);
+        }
+        
+        @keyframes fall {
+            to {
+                transform: translateY(600px);
+            }
+        }
+        
+        .game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            font-size: 1.8rem;
+            text-align: center;
+            padding: 20px;
+            display: none;
+            z-index: 10;
+        }
+        
+        .game-overlay.show {
+            display: flex;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 5;
+        }
+        
+        @media (max-width: 480px) {
+            .game-container {
+                width: 90%;
+                height: 80vh;
+            }
+            
+            .player {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .snack, .obstacle {
+                width: 35px;
+                height: 35px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div>Snack Game</div>
+            <div class="score-lives">
+                <div>Score: <span id="score">0</span></div>
+                <div>Lives: <span id="lives">3</span></div>
+            </div>
+        </div>
+        
+        <div class="game-canvas" id="gameCanvas">
+            <div class="player" id="player"></div>
+        </div>
+        
+        <div class="instructions">
+            Use Arrow Keys ← → to move<br>Collect snacks (yellow) • Avoid bombs (red)
+        </div>
+        
+        <div class="game-overlay" id="gameOverlay">
+            <div>Game Over!</div>
+            <div>Final Score: <span id="finalScore">0</span></div>
+            <button class="btn" id="restartBtn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        class SnackGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.player = document.getElementById('player');
+                this.scoreElement = document.getElementById('score');
+                this.livesElement = document.getElementById('lives');
+                this.gameOverlay = document.getElementById('gameOverlay');
+                this.finalScoreElement = document.getElementById('finalScore');
+                this.restartBtn = document.getElementById('restartBtn');
+                
+                this.canvasWidth = this.canvas.offsetWidth;
+                this.canvasHeight = this.canvas.offsetHeight;
+                
+                this.playerSize = 60;
+                this.playerX = this.canvasWidth / 2 - this.playerSize / 2;
+                this.playerSpeed = 8;
+                
+                this.snacks = [];
+                this.obstacles = [];
+                
+                this.score = 0;
+                this.lives = 3;
+                this.gameOver = false;
+                this.spawnRate = 1500; // ms
+                this.lastSpawn = 0;
+                
+                this.init();
+            }
+            
+            init() {
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+                this.restartBtn.addEventListener('click', () => this.restartGame());
+                this.resetGame();
+                this.gameLoop();
+            }
+            
+            handleKeyDown(e) {
+                if (this.gameOver) return;
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        this.movePlayer(-1);
+                        break;
+                    case 'ArrowRight':
+                        this.movePlayer(1);
+                        break;
+                }
+            }
+            
+            movePlayer(direction) {
+                const newX = this.playerX + (this.playerSpeed * direction);
+                const maxX = this.canvasWidth - this.playerSize;
+                this.playerX = Math.max(0, Math.min(newX, maxX));
+                this.player.style.left = `${this.playerX}px`;
+            }
+            
+            spawnObject() {
+                const now = Date.now();
+                if (now - this.lastSpawn < this.spawnRate) return;
+                
+                this.lastSpawn = now;
+                
+                // Decide if it's a snack or obstacle (70% snack, 30% obstacle)
+                const isSnack = Math.random() < 0.7;
+                const size = 40;
+                const x = Math.random() * (this.canvasWidth - size);
+                
+                const object = document.createElement('div');
+                object.className = isSnack ? 'snack' : 'obstacle';
+                object.style.left = `${x}px`;
+                object.style.top = `-${size}px`;
+                object.dataset.type = isSnack ? 'snack' : 'obstacle';
+                
+                // Random fall speed between 2-5 px/frame
+                object.speed = 2 + Math.random() * 3;
+                
+                this.canvas.appendChild(object);
+                
+                if (isSnack) {
+                    this.snacks.push(object);
+                } else {
+                    this.obstacles.push(object);
+                }
+            }
+            
+            update() {
+                if (this.gameOver) return;
+                
+                this.spawnObject();
+                
+                // Update snacks
+                this.snacks.forEach((snack, index) => {
+                    snack.style.top = `${parseFloat(snack.style.top) + snack.speed}px`;
+                    
+                    // Remove if off screen
+                    if (parseFloat(snack.style.top) > this.canvasHeight) {
+                        snack.remove();
+                        this.snacks.splice(index, 1);
+                        return;
+                    }
+                    
+                    // Check collision with player
+                    if (this.checkCollision(snack)) {
+                        snack.remove();
+                        this.snacks.splice(index, 1);
+                        this.score += 10;
+                        this.scoreElement.textContent = this.score;
+                        
+                        // Increase difficulty slightly
+                        if (this.score % 50 === 0) {
+                            this.spawnRate = Math.max(500, this.spawnRate - 50);
+                        }
+                    }
+                });
+                
+                // Update obstacles
+                this.obstacles.forEach((obstacle, index) => {
+                    obstacle.style.top = `${parseFloat(obstacle.style.top) + obstacle.speed}px`;
+                    
+                    // Remove if off screen
+                    if (parseFloat(obstacle.style.top) > this.canvasHeight) {
+                        obstacle.remove();
+                        this.obstacles.splice(index, 1);
+                        return;
+                    }
+                    
+                    // Check collision with player
+                    if (this.checkCollision(obstacle)) {
+                        obstacle.remove();
+                        this.obstacles.splice(index, 1);
+                        this.lives -= 1;
+                        this.livesElement.textContent = this.lives;
+                        
+                        if (this.lives <= 0) {
+                            this.endGame();
+                        }
+                    }
+                });
+            }
+            
+            checkCollision(obj1) {
+                const playerRect = this.player.getBoundingClientRect();
+                const objRect = obj1.getBoundingClientRect();
+                
+                return !(playerRect.right < objRect.left || 
+                        playerRect.left > objRect.right || 
+                        playerRect.bottom < objRect.top || 
+                        playerRect.top > objRect.bottom);
+            }
+            
+            endGame() {
+                this.gameOver = true;
+                this.gameOverlay.style.display = 'flex';
+                this.finalScoreElement.textContent = this.score;
+            }
+            
+            restartGame() {
+                this.gameOver = false;
+                this.gameOverlay.style.display = 'none';
+                this.resetGame();
+            }
+            
+            resetGame() {
+                // Clear all objects
+                this.snacks.forEach(snack => snack.remove());
+                this.obstacles.forEach(obstacle => obstacle.remove());
+                this.snacks = [];
+                this.obstacles = [];
+                
+                // Reset game state
+                this.score = 0;
+                this.lives = 3;
+                this.scoreElement.textContent = this.score;
+                this.livesElement.textContent = this.lives;
+                this.spawnRate = 1500;
+                
+                // Reset player position
+                this.playerX = this.canvasWidth / 2 - this.playerSize / 2;
+                this.player.style.left = `${this.playerX}px`;
+            }
+            
+            gameLoop() {
+                this.update();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        }
+        
+        // Start the game when page loads
+        window.addEventListener('load', () => {
+            new SnackGame();
+        });
+    </script>
+</body>
+</html>
